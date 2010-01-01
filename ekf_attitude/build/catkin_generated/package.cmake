@@ -1,0 +1,7 @@
+set(_CATKIN_CURRENT_PACKAGE "mpu_calculation")
+set(mpu_calculation_MAINTAINER "saodiseng <saodiseng@todo.todo>")
+set(mpu_calculation_DEPRECATED "")
+set(mpu_calculation_VERSION "0.0.0")
+set(mpu_calculation_BUILD_DEPENDS "roscpp" "rospy" "std_msgs" "sensor_msgs" "serial" "tf")
+set(mpu_calculation_RUN_DEPENDS "roscpp" "rospy" "std_msgs" "sensor_msgs" "serial" "tf")
+set(mpu_calculation_BUILDTOOL_DEPENDS "catkin")
