@@ -5,7 +5,9 @@ project(LineLidar)
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	std_msgs
+        pcl_conversions
 	cv_bridge
+        tf
 	sensor_msgs
 )
 
@@ -21,6 +23,8 @@ catkin_package(
 
 
 file(GLOB "./tools/include")
+file(GLOB "./include")
+
 include_directories(./tools/include)
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(
