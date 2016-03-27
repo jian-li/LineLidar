@@ -13,8 +13,9 @@ namespace LineLidar
 Triangulation::Triangulation()
 {
     ros::NodeHandle nh;
-    this->baseline_len = 10;
+    this->baseline_len = 80;
     this->focal_len = 3.1;
+    this->pixel_size = 6.35/5*4/1280;
     pointclouds_pub = nh.advertise<sensor_msgs::PointCloud2>("/pointcloud_topic", 30);
     image_raw_sub = nh.subscribe("/usb_cam/image_raw", 30, &Triangulation::usbcam_image_callback, this);
 }
@@ -49,6 +50,7 @@ void Triangulation::usbcam_image_callback(const sensor_msgs::ImageConstPtr usbca
     image_height = raw_image.size().height;
 
     int max_column_gray_index_array[image_width];
+    float column_gray_center[image_width];
     int valid_column[image_width];
     int valid_column_number = 0;
 
@@ -68,28 +70,42 @@ void Triangulation::usbcam_image_callback(const sensor_msgs::ImageConstPtr usbca
         {
             valid_column[valid_column_number] = i;
             valid_column_number ++;
+            if(max_column_gray_index_array[i] > 5 && max_column_gray_index_array[i] < 240 )
+            {
+                double gray_value_sum = 0;
+                double gray_weighted_index_sum = 0;
+                for(int j = max_column_gray_index_array[i] - 5; j < max_column_gray_index_array[i] + 5; j++)
+                {
+                    gray_value_sum = gray_value_sum + gray_image.at<uchar>(j, i);
+                    gray_weighted_index_sum = gray_weighted_index_sum + gray_image.at<uchar>(j, i) * j;
+                }
+                if(gray_value_sum != 0)
+                    column_gray_center[i] = gray_weighted_index_sum / gray_value_sum;
+            }
         }
     }
 
-    float column_gray_center[valid_column_number];
+
+//    float column_gray_center[valid_column_number];
     //calculate the gray center
+    std::cout << "here ok" << std::endl;
     for(int i = 0; i < valid_column_number; i++)
     {
-        if(max_column_gray_index_array[valid_column[i]] > 5 && max_column_gray_index_array[valid_column[i]] < 240 )
-        {
-            double gray_value_sum = 0;
-            double gray_weighted_index_sum = 0;
-            for(int j = max_column_gray_index_array[valid_column[i]] - 5; j < max_column_gray_index_array[valid_column[i]] + 5; j++)
-            {
-                gray_value_sum = gray_value_sum + gray_image.at<uchar>(j, valid_column[i]);
-                gray_weighted_index_sum = gray_weighted_index_sum + gray_image.at<uchar>(j, valid_column[i]) * j;
-            }
-            column_gray_center[valid_column[i]] = gray_weighted_index_sum / gray_value_sum;
-        }
-
-        std::cout << "sub pixel index" << column_gray_center[valid_column[i]] << std::endl;
+//        if(max_column_gray_index_array[valid_column[i]] > 5 && max_column_gray_index_array[valid_column[i]] < 240 )
+//        {
+            //            double gray_value_sum = 0;
+            //            double gray_weighted_index_sum = 0;
+            //            for(int j = max_column_gray_index_array[valid_column[i]] - 5; j < max_column_gray_index_array[valid_column[i]] + 5; j++)
+            //            {
+            //                gray_value_sum = gray_value_sum + gray_image.at<uchar>(j, valid_column[i]);
+            //                gray_weighted_index_sum = gray_weighted_index_sum + gray_image.at<uchar>(j, valid_column[i]) * j;
+            //            }
+            //            if(gray_value_sum != 0)
+            //                column_gray_center[valid_column[i]] = gray_weighted_index_sum / gray_value_sum;
+//        }
     }
 
+    std::cout << "here ok" << std::endl;
     pcl::PointCloud<pcl::PointXYZ>::Ptr basic_cloud_ptr (new pcl::PointCloud<pcl::PointXYZ>);
     basic_cloud_ptr->width = valid_column_number;
     basic_cloud_ptr->height = 1;
@@ -98,15 +114,15 @@ void Triangulation::usbcam_image_callback(const sensor_msgs::ImageConstPtr usbca
     std::cout << "valid_column_number"<< valid_column_number << std::endl;
     for(int i = 0; i < valid_column_number; i++)
     {
-        std::cout << "debug" << std::endl;
         pcl::PointXYZ basic_point;
-        basic_point.x = 1.0 * i/100;
-        basic_point.y = 1.0 * i/100;
+        basic_point.x = baseline_len * focal_len/ ((240 - column_gray_center[valid_column[i]] )* this->pixel_size * 1000) ;
+        //        std::cout << basic_point.x << std::endl;
+        basic_point.y = (valid_column[i] - 320) * this->pixel_size * basic_point.x / focal_len ;
         basic_point.z = 1.0 * 10/100;
         basic_cloud_ptr->points.push_back (basic_point);
-//        basic_cloud_ptr->points[i].x = 0;
-//        basic_cloud_ptr->points[i].y = 0;
-//        basic_cloud_ptr->points[i].z = 0;
+        //        basic_cloud_ptr->points[i].x = 0;
+        //        basic_cloud_ptr->points[i].y = 0;
+        //        basic_cloud_ptr->points[i].z = 0;
     }
 
     std::cout << "debug" << std::endl;
@@ -117,6 +133,7 @@ void Triangulation::usbcam_image_callback(const sensor_msgs::ImageConstPtr usbca
     PCL_msgs.header.frame_id = "/base_link";
     pointclouds_pub.publish(PCL_msgs);
 
+    //delete basic_cloud_ptr;
 }
 
 

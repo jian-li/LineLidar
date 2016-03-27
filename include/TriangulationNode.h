@@ -14,7 +14,7 @@ public:
 private:
 	float baseline_len;
 	float focal_len;
-	
+    float pixel_size;
 	ros::Publisher pointclouds_pub;
 	ros::Subscriber image_raw_sub;
 };
