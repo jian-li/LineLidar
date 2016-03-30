@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
         pcl_conversions
 	cv_bridge
         tf
+        serial
 	sensor_msgs
 )
 
@@ -39,6 +40,8 @@ include_directories(
 
 add_executable(VideoShow ./tools/ParameterSetter/VideoShow.cpp)
 add_executable(ParameterSetter ./tools/ParameterSetter/ParameterSetter.cpp)
+add_executable(NeotoLidarDriver src/neotolidardriver.cpp)
+
 
 add_executable(LineLidarNode
 	./src/TriangulationNode.cpp
@@ -54,5 +57,9 @@ target_link_libraries(ParameterSetter
 )
 
 target_link_libraries(LineLidarNode
+	${catkin_LIBRARIES}
+)
+
+target_link_libraries(NeotoLidarDriver
 	${catkin_LIBRARIES}
 )

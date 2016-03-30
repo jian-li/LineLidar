@@ -54,6 +54,7 @@ void Triangulation::usbcam_image_callback(const sensor_msgs::ImageConstPtr usbca
     int valid_column[image_width];
     int valid_column_number = 0;
 
+    std::cout << "here ok" << std::endl;
     for(int i = 0 ; i < image_width; i++)
     {
         int max_column_gray_value = gray_image.at<uchar>(0,i);
@@ -66,7 +67,7 @@ void Triangulation::usbcam_image_callback(const sensor_msgs::ImageConstPtr usbca
                 max_column_gray_index_array[i] = j;
             }
         }
-        if(max_column_gray_value > 128 )
+        if(max_column_gray_value > 50 )
         {
             valid_column[valid_column_number] = i;
             valid_column_number ++;
@@ -156,7 +157,7 @@ int main(int argc,char ** argv)
         tf::Quaternion q;
         q.setRPY(0, 0, 0);
         transform.setRotation(q);
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "/base_link"));
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "/neato_laser"));
 
         loop_rate.sleep();
     }
