@@ -12,7 +12,7 @@ namespace LineLidar
 NeotoDriver::NeotoDriver()
 {
     ros::NodeHandle nh;
-    scan_pub = nh.advertise<sensor_msgs::LaserScan>("scan", 10);
+    scan_pub = nh.advertise<sensor_msgs::LaserScan>("/base_scan", 10);
     pointreceived = 0;
 
     XV11_Package = new uint8_t[22];
@@ -115,9 +115,9 @@ void NeotoDriver::ParsePackage(uint8_t * packagePointer)
         const int number_reading = 360;
         scan.header.stamp = ros::Time::now();
         scan.header.frame_id = "/base_link";
-        scan.angle_min = -3.14;
-        scan.angle_max = 3.14;
-        scan.angle_increment = 3.14 * 2 / number_reading;
+        scan.angle_min = -PI;
+        scan.angle_max = PI;
+        scan.angle_increment = PI * 2 / number_reading;
         scan.time_increment = (1 / laser_frequency) / (number_reading);
         scan.range_min = 0.0;
         scan.range_max = 100.0;
@@ -156,8 +156,6 @@ void NeotoDriver::ParsePackage(uint8_t * packagePointer)
             BadReadings++;
         }
     }
-
-
 }
 
 void NeotoDriver::LoadPackage(uint8_t * packagePointer)

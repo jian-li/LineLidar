@@ -8,6 +8,7 @@ typedef unsigned short uint16_t;
 
 #define XV11_PACKAGE_LENGTH	22
 #define XV11_START_BYTE	0xFA
+#define PI 3.1415926
 
 namespace LineLidar
 {

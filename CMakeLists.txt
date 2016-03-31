@@ -12,6 +12,10 @@ find_package(catkin REQUIRED COMPONENTS
 	sensor_msgs
 )
 
+find_package(libpointmatcher REQUIRED)
+include_directories("${libpointmatcher_INCLUDE_DIRS}")
+message(STATUS "Using libpointmatcher version ${libpointmatcher_VERSION}")
+
 find_package(OpenCV REQUIRED)
 find_package(Qt4 REQUIRED)
 
@@ -41,7 +45,7 @@ include_directories(
 add_executable(VideoShow ./tools/ParameterSetter/VideoShow.cpp)
 add_executable(ParameterSetter ./tools/ParameterSetter/ParameterSetter.cpp)
 add_executable(NeotoLidarDriver src/neotolidardriver.cpp)
-
+add_executable(2dslam src/2dslam.cpp)
 
 add_executable(LineLidarNode
 	./src/TriangulationNode.cpp
@@ -62,4 +66,9 @@ target_link_libraries(LineLidarNode
 
 target_link_libraries(NeotoLidarDriver
 	${catkin_LIBRARIES}
+)
+
+target_link_libraries(2dslam
+    ${catkin_LIBRARIES}
+    ${libpointmatcher_LIBRARIES}
 )

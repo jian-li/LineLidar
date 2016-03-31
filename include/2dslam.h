@@ -1,25 +1,44 @@
+#ifndef _SLAM_2d
+#define _SLAM_2d
+
 #include "pointmatcher/PointMatcher.h"
 #include <sys/time.h>
+#include <ros/ros.h>
+#include <sensor_msgs/LaserScan.h>
+
+#define PI 3.1415926
+
+//using namespace PointMatcher;
+typedef PointMatcher<float> PM;
+typedef PM::DataPoints DP;
+typedef typename PointMatcher<float>::DataPoints::Label Label;
+typedef typename PointMatcher<float>::DataPoints::Labels Labels;
 
 namespace LineLidar
 {
-	class 2dslam
+    class slam2d
 	{
 	public:
-		2dslam();
-		~2dslam();
+        slam2d();
+        ~slam2d();
+        PointMatcher<float>::DataPoints * laserscantopmcloud(sensor_msgs::LaserScan::ConstPtr laser_scan_ptr);
 		void setcurrent_scan(DP* current_scan);
 		void setref_scan(DP* ref_scan);
 		void getnew_scan(DP* new_scan);
-		void do_icp();
+        void do_icp(sensor_msgs::LaserScan::ConstPtr laser_scan_ptr);
 	private:
-		bool newframe;
+        ros::Subscriber scan_sub;
+        int scan_num;
+        bool new_frame;
+        bool force3d;
 		bool first_scan;
 		bool transform_calculated;
+        double start_angle, end_angle;
 		PM::TransformationParameters transform;
 		DP* ref_scan;
 		DP* current_scan;
 		PointMatcher<float> pointmatcher;
-		PM:icp icp_al;
+
 	};
 }
+#endif
