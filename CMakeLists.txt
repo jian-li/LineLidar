@@ -12,12 +12,18 @@ find_package(catkin REQUIRED COMPONENTS
 	sensor_msgs
 )
 
+#set the cmake module paths
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/modules
+                      ${CMAKE_MODULE_PATH})
+
 find_package(libpointmatcher REQUIRED)
 include_directories("${libpointmatcher_INCLUDE_DIRS}")
 message(STATUS "Using libpointmatcher version ${libpointmatcher_VERSION}")
 
 find_package(OpenCV REQUIRED)
 find_package(Qt4 REQUIRED)
+
+find_package(YamlCpp REQUIRED)
 
 SET(QT_DONT_USE_QTGUI TRUE)
 INCLUDE(${QT_USE_FILE})
@@ -32,6 +38,8 @@ file(GLOB "./include")
 
 include_directories(./tools/include)
 include_directories(${OpenCV_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(YAMLCPP_INCLUDE_DIR)
+
 include_directories(
 	./include
 	${Qt4_INCLUDE_DIRS}
@@ -71,4 +79,5 @@ target_link_libraries(NeotoLidarDriver
 target_link_libraries(2dslam
     ${catkin_LIBRARIES}
     ${libpointmatcher_LIBRARIES}
+    ${YAMLCPP_LIBRARY}
 )

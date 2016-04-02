@@ -2,11 +2,55 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_broadcaster.h>
+#include <fstream>
+#include <iostream>
+
+/*include the library headers*/
+#include <yaml-cpp/yaml.h>
+
+using namespace std;
 
 namespace LineLidar
 {
 slam2d::slam2d()
 {
+    /*config the parameter use yaml file*/
+    YAML::Node config = YAML::LoadFile("/home/saodiseng/workspace/LineLidar/data/2dslamconfig.yaml");
+
+    this->use_downsampling_filter = config["usedownsampling"];
+    this->use_augmented_filter = config["usedesciptoraugmenting"];
+
+    if(this->use_downsampling_filter)
+    {
+        //        downsampling_filters = new PM::DataPointsFilter(
+        //                    PM::get().DataPointsFilterRegistrar.create(
+        //                        "SurfaceNormalDataPointsFilter",
+        //                        map_list_of
+        //                        ("binSize", "10")
+        //                        ("epsilon", "5")
+        //                        ("keepNormals", "0")
+        //                        ("keepDensities", "1")
+        //                        )
+        //                    );
+    }
+
+    if(true)
+    {
+        std::string inputfilter_path = "/home/saodiseng/workspace/LineLidar/inputfilter.yaml";
+        ifstream inputfilterstr(inputfilter_path.c_str());
+        if (inputfilterstr.good())
+        {
+            //            PM::DataPointsFilters f(ifs);
+            //                f.apply(d);
+            std::cout <<"filter initialized" << std::endl;
+            this->augmented_filters = new PM::DataPointsFilters(inputfilterstr);
+        }
+        else
+        {
+            ROS_ERROR_STREAM("Cannot load input filters config from YAML file " << inputfilter_path);
+        }
+    }
+
     ros::NodeHandle nh;
     start_angle = -PI;
     end_angle = PI;
@@ -16,7 +60,24 @@ slam2d::slam2d()
     this->new_frame = false;
     this->first_scan = true;
     this->transform_calculated = false;
-//    this->icp_al = new PM::ICP();
+    this->init_transform.setOrigin(tf::Vector3(0,0,0));
+    tf::Quaternion q;
+    q.setRPY(0,0,0);
+    this->init_transform.setRotation(q);
+    //    this->icp_al = new PM::ICP();
+
+    //set up icp al parameter
+
+    icp_al.setDefault();
+    std::string yaml_path = "/home/saodiseng/workspace/LineLidar/config.yaml";
+    ifstream ifs(yaml_path.c_str());
+    if(!ifs.good())
+    {
+        cerr << "Cannot open config file "; exit(1);
+    }
+    else
+        icp_al.loadFromYaml(ifs);
+
 
     this->ref_scan = new DP();
     this->current_scan = new DP();
@@ -98,6 +159,10 @@ PointMatcher<float>::DataPoints * slam2d::laserscantopmcloud(sensor_msgs::LaserS
 
 void slam2d::getnew_scan(DP* mnew_scan)
 {
+    //filter the scan
+    std::cout << "here" << std::endl;
+    this->augmented_filters->apply(*mnew_scan);
+
     if(this->first_scan)
     {
         this->setcurrent_scan(mnew_scan);
@@ -113,8 +178,7 @@ void slam2d::getnew_scan(DP* mnew_scan)
 
 void slam2d::do_icp(sensor_msgs::LaserScan::ConstPtr laser_scan_ptr)
 {
-    PM::ICP icp_al;
-    icp_al.setDefault();
+
 
     this->scan_num ++;
     DP* new_data_points = new DP();
@@ -141,22 +205,26 @@ void slam2d::do_icp(sensor_msgs::LaserScan::ConstPtr laser_scan_ptr)
 
         //send the tf transform
         static tf::TransformBroadcaster br;
-        tf::Vector3 origin(transform(0,2), transform(1,2), 0);
+        std::cout << "translation is :" << transform(0,2) << " " << transform(1,2) << std::endl;
+        tf::Vector3 origin(1.0 * transform(0,2)/100, 1.0 * transform(1,2)/100, 0);
         tf::Matrix3x3 rotation(transform(0,0), transform(0,1), 0,
                                transform(1,0), transform(1,1), 0,
                                0, 0, 1
-                    );
-//        rotation(0,0) = transform(0,0);
-//        rotation(0,1) = transform(0,1);
-//        rotation(1,0) = transform(1,0);
-//        rotation(1,1) = transform(1,1);
-//        rotation(2,2) = 1;
+                               );
+        //        rotation(0,0) = transform(0,0);
+        //        rotation(0,1) = transform(0,1);
+        //        rotation(1,0) = transform(1,0);
+        //        rotation(1,1) = transform(1,1);
+        //        rotation(2,2) = 1;
         tf::Transform transform_to_pub(rotation, origin);
+        std::cout << "send transform" << std::endl;
+        transform_to_pub.mult(transform_to_pub, this->init_transform);
+        //        std::cout << "Final transformation:" << std::endl << this->init_transform << std::endl;
         br.sendTransform(tf::StampedTransform(transform_to_pub, ros::Time::now(), "/world", "/base_link"));
     }
     else
     {
-        std::cout << " fisrt scan" << std::endl;
+        std::cout << " first scan" << std::endl;
         this->first_scan = false;
     }
 
@@ -171,6 +239,7 @@ int main(int argc, char ** argv)
 {
     ros::init(argc, argv, "slam2d");
 
+    std::cout << "start " << std::endl;
     LineLidar::slam2d slam_2d;
 
     ros::Rate spin_rate(7);

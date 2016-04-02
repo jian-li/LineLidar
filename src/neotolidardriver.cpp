@@ -106,7 +106,7 @@ void NeotoDriver::ParsePackage(uint8_t * packagePointer)
     WarningFlag[2] = (packagePointer[13] & 0x40) >> 6;
     WarningFlag[3] = (packagePointer[17] & 0x40) >> 6;
 
-    std::cout << "Index is " << Index << std::endl;
+//    std::cout << "Index is " << Index << std::endl;
     if (Index == 0)
     {
 
@@ -114,7 +114,7 @@ void NeotoDriver::ParsePackage(uint8_t * packagePointer)
         const float laser_frequency = 5.7;
         const int number_reading = 360;
         scan.header.stamp = ros::Time::now();
-        scan.header.frame_id = "/base_link";
+        scan.header.frame_id = "base_laser";
         scan.angle_min = -PI;
         scan.angle_max = PI;
         scan.angle_increment = PI * 2 / number_reading;
@@ -148,7 +148,7 @@ void NeotoDriver::ParsePackage(uint8_t * packagePointer)
         {
             Distance[Index+i] = packagePointer[4+(i*4)] | ((uint16_t)(packagePointer[5+(i*4)] & 0x3F) << 8);
             GoodReadings++;
-            std::cout << Distance[Index+i] << std::endl;
+//            std::cout << Distance[Index+i] << std::endl;
         }
         else
         {
@@ -160,7 +160,7 @@ void NeotoDriver::ParsePackage(uint8_t * packagePointer)
 
 void NeotoDriver::LoadPackage(uint8_t * packagePointer)
 {
-    std::cout << "start reading data" << std::endl;
+//    std::cout << "start reading data" << std::endl;
 
     uint8_t i = 0;
 //    uint8_t ch;
@@ -196,15 +196,15 @@ void NeotoDriver::run()
 
     LoadPackage(XV11_Package);
 
-    std::cout << "load package finished" << std::endl;
+//    std::cout << "load package finished" << std::endl;
     if (XV11_Package[0] != XV11_START_BYTE)
     {
-        std::cout << "bad start header" << std::endl;
+//        std::cout << "bad start header" << std::endl;
         SyncUp();
     }
     else
     {
-        std::cout << "start parsing package" << std::endl;
+//        std::cout << "start parsing package" << std::endl;
         ParsePackage(XV11_Package);
     }
 
@@ -231,7 +231,7 @@ int main(int argc, char ** argv)
         tf::Quaternion q;
         q.setRPY(0, 0, 0);
         transform.setRotation(q);
-        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "/base_link"));
+        br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "base_laser"));
 
 
         _spin_rate.sleep();

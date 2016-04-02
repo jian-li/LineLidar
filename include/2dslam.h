@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
+#include <tf/transform_broadcaster.h>
 
 #define PI 3.1415926
 
@@ -28,6 +29,14 @@ namespace LineLidar
         void do_icp(sensor_msgs::LaserScan::ConstPtr laser_scan_ptr);
 	private:
         ros::Subscriber scan_sub;
+        /*pointmatcher filter related parameters*/
+        bool use_downsampling_filter;
+        bool use_augmented_filter;
+        PM::DataPointsFilters * downsampling_filters;
+        PM::DataPointsFilters * augmented_filters;
+
+
+        /*pointmatcher icp related parameters*/
         int scan_num;
         bool new_frame;
         bool force3d;
@@ -38,7 +47,8 @@ namespace LineLidar
 		DP* ref_scan;
 		DP* current_scan;
 		PointMatcher<float> pointmatcher;
-
+        tf::Transform init_transform;
+        PM::ICP icp_al;
 	};
 }
 #endif
