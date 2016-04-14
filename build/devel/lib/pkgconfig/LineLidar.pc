@@ -1,0 +1,8 @@
+prefix=/home/saodiseng/workspace/LineLidar/build/devel
+
+Name: LineLidar
+Description: Description of LineLidar
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/saodiseng/workspace/LineLidar/build/devel/lib 
+Requires: 

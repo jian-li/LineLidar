@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/saodiseng/workspace/LineLidar/tools/ParameterSetter/ParameterSetter.cpp
+opencv2/opencv.hpp
+-
+iostream
+-
+
