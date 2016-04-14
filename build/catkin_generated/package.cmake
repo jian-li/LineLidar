@@ -1,7 +1,0 @@
-set(_CATKIN_CURRENT_PACKAGE "LineLidar")
-set(LineLidar_MAINTAINER "gnc430 <247072146@qq.com>")
-set(LineLidar_DEPRECATED "")
-set(LineLidar_VERSION "0.0.0")
-set(LineLidar_BUILD_DEPENDS "roscpp" "std_msgs" "sensor_msgs" "cv_bridge" "pcl_conversions" "tf" "serial")
-set(LineLidar_RUN_DEPENDS "roscpp" "rospy" "std_msgs" "sensor_msgs" "cv_bridge" "pcl_conversions" "tf" "serial")
-set(LineLidar_BUILDTOOL_DEPENDS "catkin")
