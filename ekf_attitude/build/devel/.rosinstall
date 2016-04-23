@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/tianz/catkin_ws_tianz/src/mpu_calculation/build/devel/setup.sh

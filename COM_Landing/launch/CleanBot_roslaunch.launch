@@ -1,0 +1,14 @@
+<launch>
+	<node name="video_record" pkg="image_view" type="video_recorder" respawn="false" output="log">
+                <remap from="/image" to="/camera/image_raw"/>
+		<param name="fps" value="30"/>
+		<param name="filename" value="bot1228_2.avi"/>
+	</node>
+
+
+	<node pkg="rosbag" type="rosbag" name="rosbag_record_cleanbot" 
+		args="record -o /home/group/catkin_ws /CleanBot/BotMsg">
+	</node>
+
+
+</launch>
