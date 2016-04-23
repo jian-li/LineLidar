@@ -25,7 +25,7 @@ using namespace std;
 
 char winName[20]="Live";
 Mat frame;
-VideoCapture cap ( 1 );
+VideoCapture cap ( 0 );
 
 void onTrackbar_changed ( int, void* )
 {
@@ -65,7 +65,7 @@ Triangulation::~Triangulation()
 
 void Triangulation::image_undistort ( Mat raw_image, Mat undistorted_image )
 {
-  cv::FileStorage fSettings ( "/home/saosiseng/catkin_ws/src/LineLidar/data/out_camera_data.xml", cv::FileStorage::READ );
+  cv::FileStorage fSettings ( "/home/saodiseng/catkin_ws/src/LineLidar/data/camera_data.yaml", cv::FileStorage::READ );
   float fx = fSettings["Camera.fx"];
   float fy = fSettings["Camera.fy"];
   float cx = fSettings["Camera.cx"];
@@ -76,6 +76,7 @@ void Triangulation::image_undistort ( Mat raw_image, Mat undistorted_image )
   K.at<float> ( 1,1 ) = fy;
   K.at<float> ( 0,2 ) = cx;
   K.at<float> ( 1,2 ) = cy;
+//   intrinsic_matrix = K.clone();
   K.copyTo ( intrinsic_matrix );
 
   cv::Mat DistCoef ( 4,1,CV_32F );
@@ -84,14 +85,24 @@ void Triangulation::image_undistort ( Mat raw_image, Mat undistorted_image )
   DistCoef.at<float> ( 2 ) = fSettings["Camera.p1"];
   DistCoef.at<float> ( 3 ) = fSettings["Camera.p2"];
   DistCoef.copyTo ( dist_coefficent );
-  undistort(raw_image, undistorted_image, intrinsic_matrix, dist_coefficent);
+//   dist_coefficent = DistCoef.clone();
+  undistort ( raw_image, undistorted_image, intrinsic_matrix, dist_coefficent );
+  cout << intrinsic_matrix << endl;
+  cout << dist_coefficent << endl;
+  imshow ( "distorted image", undistorted_image );
+  waitKey ( 1 );
 }
 
 void Triangulation::process_image ( Mat raw_image )
 {
   Mat undistorted_image = raw_image.clone();
-  image_undistort(raw_image, undistorted_image);
+
+
+  image_undistort ( raw_image, undistorted_image );
   raw_image = undistorted_image.clone();
+
+
+
   cv::Mat gray_image;
   cv::cvtColor ( raw_image, gray_image, CV_BGR2GRAY );
 
@@ -348,8 +359,7 @@ int main ( int argc,char ** argv )
   while ( ros::ok() )
     {
       cap >> frame; // get a new frame from camera
-      imshow ( "image_raw", frame );
-      if ( waitKey ( 30 ) >= 0 ) break;
+
       triangulation_node.process_image ( frame );
       ros::spinOnce();
       static tf::TransformBroadcaster br;
