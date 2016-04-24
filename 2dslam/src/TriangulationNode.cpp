@@ -9,7 +9,6 @@
 #include <cv_bridge/cv_bridge.h>
 #include <tf/transform_broadcaster.h>
 
-
 float Brightness;
 float Contrast ;
 float Saturation;
@@ -79,11 +78,12 @@ void Triangulation::image_undistort ( Mat raw_image, Mat undistorted_image )
 //   intrinsic_matrix = K.clone();
   K.copyTo ( intrinsic_matrix );
 
-  cv::Mat DistCoef ( 4,1,CV_32F );
+  cv::Mat DistCoef ( 5,1,CV_32F );
   DistCoef.at<float> ( 0 ) = fSettings["Camera.k1"];
   DistCoef.at<float> ( 1 ) = fSettings["Camera.k2"];
   DistCoef.at<float> ( 2 ) = fSettings["Camera.p1"];
   DistCoef.at<float> ( 3 ) = fSettings["Camera.p2"];
+  DistCoef.at<float> ( 4 ) = fSettings["Camera.k3"];
   DistCoef.copyTo ( dist_coefficent );
 //   dist_coefficent = DistCoef.clone();
   undistort ( raw_image, undistorted_image, intrinsic_matrix, dist_coefficent );
@@ -201,8 +201,8 @@ void Triangulation::process_image ( Mat raw_image )
   PCL_msgs.header.stamp  = ros::Time::now();
   PCL_msgs.header.frame_id = "/neato_laser";
   pointclouds_pub.publish ( PCL_msgs );
-
 }
+
 void Triangulation::usbcam_image_callback ( const sensor_msgs::ImageConstPtr usbcam_image_ptr )
 {
   ROS_INFO ( "callback started" );
