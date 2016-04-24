@@ -84,3 +84,8 @@ This package contains the 1st generation neato lidar driver!
         return beginEstimateWorld;
     }
  ```
+# camera caliratoin 
+To use the camera calibration function, you can use the code in 2dslam/tools, you should first setting the calibration file, include the inner corner numbers, mm per unit, fixratio, web cam device number, image numbers.
+ 
+Further advice can be found here:
+http://answers.opencv.org/question/7554/results-of-camera-calibration-vary/
