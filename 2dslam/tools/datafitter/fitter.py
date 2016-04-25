@@ -28,7 +28,15 @@ print popt, pcov
 #the error of each point
 predicted_dist = [popt/(240 - x) for x in xdata]
 
+#plot the raw data
 plt.plot(xdata, ydata, 'ro')
+
+
+#plot the fitted function curce
+x_value = numpy.arange(80, 200, 0.1 )
+y_value = [ popt / (240 - x) for x in x_value]
+
+plt.plot(x_value, y_value)
 plt.show()
 
 error = xdata
