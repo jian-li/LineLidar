@@ -24,7 +24,7 @@ using namespace std;
 
 char winName[20]="Live";
 Mat frame;
-VideoCapture cap ( 0 );
+VideoCapture cap ( 1 );
 
 void onTrackbar_changed ( int, void* )
 {
@@ -100,8 +100,6 @@ void Triangulation::process_image ( Mat raw_image )
 
   image_undistort ( raw_image, undistorted_image );
   raw_image = undistorted_image.clone();
-
-
 
   cv::Mat gray_image;
   cv::cvtColor ( raw_image, gray_image, CV_BGR2GRAY );
