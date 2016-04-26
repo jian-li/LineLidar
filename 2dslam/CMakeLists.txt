@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
         tf
         serial
 	sensor_msgs
+	laser_geometry
 )
 
 #set the cmake module paths
@@ -22,7 +23,7 @@ message(STATUS "Using libpointmatcher version ${libpointmatcher_VERSION}")
 
 find_package(OpenCV REQUIRED)
 find_package(Qt4 REQUIRED)
-
+find_package(PCL REQUIRED)
 find_package(YamlCpp REQUIRED)
 
 SET(QT_DONT_USE_QTGUI TRUE)
@@ -50,6 +51,7 @@ add_custom_target(dummy_${PROJECT_NAME} SOURCES ${extra_files})
 include_directories(./tools/include)
 include_directories(${OpenCV_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(YAMLCPP_INCLUDE_DIR)
+include_directories(${PCL_INCLUDE_DIRS})
 
 include_directories(
 	./include
@@ -68,6 +70,8 @@ add_executable(camera_setting src/camera_setting.cpp)
 add_executable(LineLidarNode
 	./src/TriangulationNode.cpp
 )
+
+add_executable(pcl_icp src/pcl_icp.cpp)
 
 target_link_libraries(VideoShow
 	${OpenCV_LIBRARIES}
@@ -95,5 +99,10 @@ target_link_libraries(2dslam
     ${libpointmatcher_LIBRARIES}
     ${YAMLCPP_LIBRARY}
 )
+
+target_link_libraries(pcl_icp 
+    ${PCL_LIBRARIES}
+    ${catkin_LIBRARIES}
+    )
 
 # add_subdirectory(ekf_attitude)
