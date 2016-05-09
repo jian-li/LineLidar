@@ -121,10 +121,7 @@ void NeotoDriver::ParsePackage(uint8_t *packagePointer)
                 scan.intensities[i] = 1.0;
                 AnglesCovered++;
             }
-        }
-
-
-
+        }       
 
         scan_pub.publish(scan);
 

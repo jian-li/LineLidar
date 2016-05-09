@@ -4,6 +4,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 #include <pcl/point_types.h>
 #include <curses.h>
 #include <cv_bridge/cv_bridge.h>
@@ -86,18 +87,23 @@ void Triangulation::image_undistort ( Mat raw_image, Mat undistorted_image )
         DistCoef.copyTo ( dist_coefficent );
 //   dist_coefficent = DistCoef.clone();
         undistort ( raw_image, undistorted_image, intrinsic_matrix, dist_coefficent );
-        cout << intrinsic_matrix << endl;
-        cout << dist_coefficent << endl;
-        imshow ( "distorted image", undistorted_image );
-        waitKey ( 1 );
+//         cout << intrinsic_matrix << endl;
+//         cout << dist_coefficent << endl;
+
 }
 
 void Triangulation::process_image ( Mat raw_image )
 {
+
+        std::cout << "==============================" << std::endl;
+        std::cout << "New image get:" << std::endl;
+
         Mat undistorted_image = raw_image.clone();
 
 
         image_undistort ( raw_image, undistorted_image );
+
+
         raw_image = undistorted_image.clone();
 
         cv::Mat gray_image;
@@ -113,23 +119,44 @@ void Triangulation::process_image ( Mat raw_image )
         int valid_column[image_width];
         int valid_column_number = 0;
 
+        //remove the relative dark region
+
+
+        imshow ( "raw image", gray_image );
+        waitKey ( 1 );
+
+
         std::cout << "here ok" << std::endl;
+
+        //only use the first maximum
+        //
+
+
+
         for ( int i = 0 ; i < image_width; i++ ) {
+                bool maximum_get = false;
                 int max_column_gray_value = gray_image.at<uchar> ( 0,i );
                 max_column_gray_index_array[i] = 0;
-                for ( int j = 1; j < image_height; j++ ) {
+                for ( int j = 1; j < image_height / 2 + 1 && maximum_get != true; j++ ) {
                         if ( max_column_gray_value < gray_image.at<uchar> ( j,i ) ) {
                                 max_column_gray_value = gray_image.at<uchar> ( j,i );
                                 max_column_gray_index_array[i] = j;
+                        } else {
+                                if ( gray_image.at<uchar> ( j,i ) < max_column_gray_value * 0.4 ) {
+                                        maximum_get = true;
+//                                         break;
+
+                                }
                         }
                 }
+
                 if ( max_column_gray_value > 50 ) {
                         valid_column[valid_column_number] = i;
                         valid_column_number ++;
                         if ( max_column_gray_index_array[i] > 5 && max_column_gray_index_array[i] < 240 ) {
                                 double gray_value_sum = 0;
                                 double gray_weighted_index_sum = 0;
-                                for ( int j = max_column_gray_index_array[i] - 5; j < max_column_gray_index_array[i] + 5; j++ ) {
+                                for ( int j = max_column_gray_index_array[i] - 10; j < max_column_gray_index_array[i] + 10; j++ ) {
                                         gray_value_sum = gray_value_sum + gray_image.at<uchar> ( j, i );
                                         gray_weighted_index_sum = gray_weighted_index_sum + gray_image.at<uchar> ( j, i ) * j;
                                 }
@@ -139,61 +166,67 @@ void Triangulation::process_image ( Mat raw_image )
                 }
         }
 
+        pcl::PointCloud<pcl::PointXYZ>::Ptr basic_cloud_ptr ( new pcl::PointCloud<pcl::PointXYZ> );
 
-//    float column_gray_center[valid_column_number];
-        //calculate the gray center
-        std::cout << "here ok" << std::endl;
+
+        double x_dis[valid_column_number], y_dis[valid_column_number];
+        int positive_cnt = 0;
+
         for ( int i = 0; i < valid_column_number; i++ ) {
-//        if(max_column_gray_index_array[valid_column[i]] > 5 && max_column_gray_index_array[valid_column[i]] < 240 )
-//        {
-                //            double gray_value_sum = 0;
-                //            double gray_weighted_index_sum = 0;
-                //            for(int j = max_column_gray_index_array[valid_column[i]] - 5; j < max_column_gray_index_array[valid_column[i]] + 5; j++)
-                //            {
-                //                gray_value_sum = gray_value_sum + gray_image.at<uchar>(j, valid_column[i]);
-                //                gray_weighted_index_sum = gray_weighted_index_sum + gray_image.at<uchar>(j, valid_column[i]) * j;
-                //            }
-                //            if(gray_value_sum != 0)
-                //                column_gray_center[valid_column[i]] = gray_weighted_index_sum / gray_value_sum;
-//        }
+
+//       basic_point.x = ( float ) baseline_len * focal_len/ ( ( 1.0 * 240 - column_gray_center[valid_column[i]] ) * this->pixel_size * 1000 );
+                /*
+                 * change the measure model
+                 */
+                x_dis[positive_cnt] = ( float ) 8 /tan ( ( 239.5 - column_gray_center[valid_column[i]] ) * 0.00179711 - 0.07737405 ) /100;
+
+                y_dis[positive_cnt] = ( float ) ( valid_column[i] - 320 ) * this->pixel_size * x_dis[positive_cnt] / focal_len;
+
+//                 basic_point.x = ( float ) 8 /tan ( ( 239.5 - column_gray_center[valid_column[i]] ) * 0.00179711 - 0.07737405 ) /100;
+                if ( valid_column[i] == ( int ) image_width / 2 ) {
+                        std::cout << x_dis[positive_cnt] << std::endl;
+                        cout << column_gray_center[valid_column[i]] << endl;
+                }
+                if ( x_dis[positive_cnt] > 0 && x_dis[positive_cnt] < 2.5 ) {
+//                         cout << "the distance is:" << x_dis[positive_cnt] << endl;
+                        positive_cnt++;
+                }
+//                 basic_point.y = ( float ) ( valid_column[i] - 320 ) * this->pixel_size * basic_point.x / focal_len ;
+//                 basic_point.z = 1.0 * 10/100;
         }
 
-        std::cout << "here ok" << std::endl;
-        pcl::PointCloud<pcl::PointXYZ>::Ptr basic_cloud_ptr ( new pcl::PointCloud<pcl::PointXYZ> );
-        basic_cloud_ptr->width = valid_column_number;
+        basic_cloud_ptr->width = positive_cnt;
         basic_cloud_ptr->height = 1;
 
 
-        std::cout << "valid_column_number"<< valid_column_number << std::endl;
-        for ( int i = 0; i < valid_column_number; i++ ) {
+
+        for ( int i = 0; i < positive_cnt; i++ ) {
                 pcl::PointXYZ basic_point;
-//       basic_point.x = ( float ) baseline_len * focal_len/ ( ( 1.0 * 240 - column_gray_center[valid_column[i]] ) * this->pixel_size * 1000 ) ;
-                basic_point.x = ( float ) 15189.577421 / ( 240 - column_gray_center[valid_column[i]] ) / 100;
-                if ( i == ( int ) valid_column_number / 2 ) {
-                        std::cout << i << std::endl;
-                        std::cout << basic_point.x << std::endl;
-                        cout << column_gray_center[valid_column[i]] << endl;
+                basic_point.x = x_dis[i];
+                basic_point.y = y_dis[i];
+//                 basic_point.y = (i - 320) * 1.0 / 1000;
+                basic_point.z = 1.0 * 10 / 100;
+                if ( basic_point.x > 0 ) {
+                        basic_cloud_ptr->points.push_back ( basic_point );
                 }
-                basic_point.y = ( float ) ( valid_column[i] - 320 ) * this->pixel_size * basic_point.x / focal_len ;
-                basic_point.z = 1.0 * 10/100;
-                basic_cloud_ptr->points.push_back ( basic_point );
-                //        basic_cloud_ptr->points[i].x = 0;
-                //        basic_cloud_ptr->points[i].y = 0;
-                //        basic_cloud_ptr->points[i].z = 0;
         }
 
-        std::cout << "debug" << std::endl;
+        cout << positive_cnt << " "<< 1 << " " << basic_cloud_ptr->size() << endl;
 
         sensor_msgs::PointCloud2 PCL_msgs;
+        sensor_msgs::PointCloud pcl_msg_pcl;
+
         pcl::toROSMsg ( *basic_cloud_ptr, PCL_msgs );
         PCL_msgs.header.stamp  = ros::Time::now();
-        PCL_msgs.header.frame_id = "/neato_laser";
+        PCL_msgs.header.frame_id = "/base_link";
+
+//         sensor_msgs::convertPointCloud2ToPointCloud(PCL_msgs, pcl_msg_pcl);
         pointclouds_pub.publish ( PCL_msgs );
 }
 
 void Triangulation::usbcam_image_callback ( const sensor_msgs::ImageConstPtr usbcam_image_ptr )
 {
-        ROS_INFO("callback started");
+        ROS_INFO ( "callback started" );
         //convert sensor_msgs images to opencv image
         cv_bridge::CvImagePtr cv_ptr;
         try {
@@ -202,6 +235,7 @@ void Triangulation::usbcam_image_callback ( const sensor_msgs::ImageConstPtr usb
                 ROS_ERROR ( "cv_bridge exception: %s", e.what() );
                 return;
         }
+
         cv::Mat raw_image = cv_ptr->image.clone();
 
         //extract the laser line
@@ -217,7 +251,7 @@ void Triangulation::usbcam_image_callback ( const sensor_msgs::ImageConstPtr usb
         int valid_column[image_width];
         int valid_column_number = 0;
 
-        std::cout << "here ok" << std::endl;
+//         std::cout << "here ok" << std::endl;
         for ( int i = 0 ; i < image_width; i++ ) {
                 int max_column_gray_value = gray_image.at<uchar> ( 0,i );
                 max_column_gray_index_array[i] = 0;
@@ -243,32 +277,12 @@ void Triangulation::usbcam_image_callback ( const sensor_msgs::ImageConstPtr usb
                 }
         }
 
-
-//    float column_gray_center[valid_column_number];
-        //calculate the gray center
-        std::cout << "here ok" << std::endl;
-        for ( int i = 0; i < valid_column_number; i++ ) {
-//        if(max_column_gray_index_array[valid_column[i]] > 5 && max_column_gray_index_array[valid_column[i]] < 240 )
-//        {
-                //            double gray_value_sum = 0;
-                //            double gray_weighted_index_sum = 0;
-                //            for(int j = max_column_gray_index_array[valid_column[i]] - 5; j < max_column_gray_index_array[valid_column[i]] + 5; j++)
-                //            {
-                //                gray_value_sum = gray_value_sum + gray_image.at<uchar>(j, valid_column[i]);
-                //                gray_weighted_index_sum = gray_weighted_index_sum + gray_image.at<uchar>(j, valid_column[i]) * j;
-                //            }
-                //            if(gray_value_sum != 0)
-                //                column_gray_center[valid_column[i]] = gray_weighted_index_sum / gray_value_sum;
-//        }
-        }
-
-        std::cout << "here ok" << std::endl;
+//         std::cout << "here ok" << std::endl;
         pcl::PointCloud<pcl::PointXYZ>::Ptr basic_cloud_ptr ( new pcl::PointCloud<pcl::PointXYZ> );
         basic_cloud_ptr->width = valid_column_number;
         basic_cloud_ptr->height = 1;
 
-
-        std::cout << "valid_column_number"<< valid_column_number << std::endl;
+//         std::cout << "valid_column_number"<< valid_column_number << std::endl;
         for ( int i = 0; i < valid_column_number; i++ ) {
                 pcl::PointXYZ basic_point;
                 basic_point.x = baseline_len * focal_len/ ( ( 240 - column_gray_center[valid_column[i]] ) * this->pixel_size * 1000 ) ;
@@ -299,16 +313,19 @@ int main ( int argc,char **argv )
 {
         ros::init ( argc, argv, "TriangulationNode" );
 
-        if(!cap.isOpened()) // check if we succeeded
+        if ( !cap.isOpened() ) // check if we succeeded
                 return -1;
 
         cout << "Press 's' to save snapshot" << endl;
-        namedWindow(winName);
+        namedWindow ( winName );
 
-        Brightness = cap.get(CV_CAP_PROP_BRIGHTNESS );
-        Contrast   = cap.get(CV_CAP_PROP_CONTRAST );
-        Saturation = cap.get(CV_CAP_PROP_SATURATION );
-        Gain       = cap.get(CV_CAP_PROP_GAIN );
+        Brightness = cap.get ( CV_CAP_PROP_BRIGHTNESS );
+        Contrast   = cap.get ( CV_CAP_PROP_CONTRAST );
+        Saturation = cap.get ( CV_CAP_PROP_SATURATION );
+        Gain       = cap.get ( CV_CAP_PROP_GAIN );
+
+        cap.set ( CV_CAP_PROP_FRAME_WIDTH, 640 );
+        cap.set ( CV_CAP_PROP_FRAME_HEIGHT, 480 );
 
         cout << "====================================" << endl << endl;
         cout << "Default Brightness -------> " << Brightness << endl;
@@ -317,33 +334,33 @@ int main ( int argc,char **argv )
         cout << "Default Gain--------------> " << Gain << endl << endl;
         cout << "====================================" << endl;
 
-        B = int( Brightness*100 );
-        C = int( Contrast*100 );
-        S = int( Saturation*100 );
-        G = int( Gain*100 );
+        B = int ( Brightness*100 );
+        C = int ( Contrast*100 );
+        S = int ( Saturation*100 );
+        G = int ( Gain*100 );
 
-        createTrackbar( "Brightness",winName, &B, 100, onTrackbar_changed );
-        createTrackbar( "Contrast",winName, &C, 100,onTrackbar_changed );
-        createTrackbar( "Saturation",winName, &S, 100,onTrackbar_changed );
-        createTrackbar( "Gain",winName, &G, 100,onTrackbar_changed );
+        createTrackbar ( "Brightness",winName, &B, 100, onTrackbar_changed );
+        createTrackbar ( "Contrast",winName, &C, 100,onTrackbar_changed );
+        createTrackbar ( "Saturation",winName, &S, 100,onTrackbar_changed );
+        createTrackbar ( "Gain",winName, &G, 100,onTrackbar_changed );
 
         LineLidar::Triangulation triangulation_node;
 
-        ros::Rate loop_rate( 30 );
+        ros::Rate loop_rate ( 30 );
 
         using namespace LineLidar;
-        while (ros::ok()) {
+        while ( ros::ok() ) {
                 cap >> frame; // get a new frame from camera
 
-                triangulation_node.process_image(frame);
+                triangulation_node.process_image ( frame );
                 ros::spinOnce();
                 static tf::TransformBroadcaster br;
                 tf::Transform transform;
-                transform.setOrigin(tf::Vector3(0.0, 0.0, 0.0));
+                transform.setOrigin ( tf::Vector3 ( 0.0, 0.0, 0.0 ) );
                 tf::Quaternion q;
-                q.setRPY(0, 0, 0);
-                transform.setRotation(q);
-                br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/world", "/neato_laser" ) );
+                q.setRPY ( 0, 0, 0 );
+                transform.setRotation ( q );
+                br.sendTransform ( tf::StampedTransform ( transform, ros::Time::now(), "/world", "/base_link" ) );
 
                 loop_rate.sleep();
         }
